@@ -9,4 +9,4 @@ population.py - Manages each generation of neural networks , calculate fitness ,
 
 dna.py - Maintains data for a single neural network
 
-snake_imp.py - Manages the snake game ( See line 46 in snake_imp.py to adjust the code)
+snake_imp.py - Manages the snake game ( See line 46 in snake_imp.py to adjust the speed of game )
