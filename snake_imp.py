@@ -53,9 +53,10 @@ class snake:
 		return math.sqrt( (self.applepos[0] - self.xs[0]) ** 2 + (self.applepos[0] - self.xs[0]) ** 2 )
 
 	def move(self):
-		snake.clock.tick(20)
+		snake.clock.tick(30)
 		i = len(self.xs)-1
 		i = len(self.xs)-1
+		# Uncomment these lines to make the snake die if it collides with itself
 		# while i >= 2:
 		# 	if self.collide(self.xs[0], self.xs[i], self.ys[0], self.ys[i], 20, 20, 20, 20):
 		# 		self.die(self.s, self.score)
