@@ -25,9 +25,9 @@ class snake:
 		self.hits = 0
 		self.distance = 0
 		self.net = net
-		self.a , self.b = random.randint(100, 500) , random.randint(100, 500)
+		self.a , self.b = random.randint(0, 500) , random.randint(0, 500)
 		self.applepos = ( self.a  , self.b )
-		# self.applepos = ( self.a - self.a % 20 , self.b - self.b % 20 )
+		self.applepos = ( self.a - self.a % 20 , self.b - self.b % 20 )
 		self.population = population
 		self.play()
 
@@ -53,7 +53,7 @@ class snake:
 		return math.sqrt( (self.applepos[0] - self.xs[0]) ** 2 + (self.applepos[0] - self.xs[0]) ** 2 )
 
 	def move(self):
-		snake.clock.tick(30)
+		snake.clock.tick(20)
 		i = len(self.xs)-1
 		i = len(self.xs)-1
 		# Uncomment these lines to make the snake die if it collides with itself
@@ -63,7 +63,7 @@ class snake:
 		# 		return True
 		# 	i-= 1
 		if self.collide(self.xs[0], self.applepos[0], self.ys[0], self.applepos[1], 20, 20, 20, 20):
-			self.score += 5
+			self.score += 10
 			snake.s.blit(snake.clear, (self.applepos[0] , self.applepos[1] ))
 			self.hits += 1
 			self.xs.append(700)
@@ -114,8 +114,9 @@ class snake:
 		return x
 
 	def get_input(self):
-		X = np.array([ self.dirs , self.applepos[0] - self.xs[0] , self.applepos[1] - self.ys[0] ])
-		X[0] = self.dirs
+		# X = np.array([ self.applepos[0] , self.applepos[1] , self.xs[0] , self.ys[0] ])
+		X = np.array([ self.applepos[0] -  self.xs[0] , self.applepos[1] - self.ys[0] ])
+		# X[0] = self.dirs
 		return X
 
 	def up(self):
@@ -144,9 +145,9 @@ class snake:
 				return
 			self.select(self.forward())
 			if self.getDistance() < self.distance:
-				self.score += 2
+				self.score += 3
 			else:
-				self.score -= 2
+				self.score -= 3
 			self.distance = self.getDistance()
 			# pygame.image.save(snake.s , "video/screenshot" + str(snake.i) + ".jpeg")
 			# snake.i += 1

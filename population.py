@@ -14,13 +14,13 @@ class population:
 
 	def calculateFitness(self):
 		threads = []
-		print "Generation: start ", population.generation
+		print "Generation:", population.generation
 		for member in self.pop:
 			# member.play()
 			threads.append(Thread(target = member.play))
 		for t in threads:t.start()
 		for t in threads:t.join()
-		print "Generation: end ", population.generation
+		# print "Generation: end ", population.generation
 		population.generation += 1
 
 	def reproduce(self):
@@ -32,9 +32,9 @@ class population:
 		for i in range(self.size):
 			m1 , m2 = randrange(0 , len(self.matingPool) ) , randrange(0 , len(self.matingPool))
 			father , mother = self.matingPool[m1] , self.matingPool[m2]
-			new1 , new2 = father.crossover(mother)
+			new1 , new2 , b1 , b2 = father.crossover(mother)
 			member = neuralNetwork(self)
-			member.W1 , member.W2 = new1 , new2
+			member.W1 , member.W2 , member.b1 , member.b2 = new1 , new2 , b1 , b2
 			new_pop.append(member)
 		self.pop = new_pop[:]
 
