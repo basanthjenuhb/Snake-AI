@@ -40,8 +40,9 @@ class neuralNetwork:
 				self.W2[i] = np.random.randn(len(self.W2[i]))
 
 	def sigmoid(self,z):
-		y = 1 / ( 1 + np.exp( -z ) )
-		return y
+		z = 1 / ( 1 + np.exp( -z ) )
+		# for i in range(len(z)):if z[i] < 0:z[i] = 0
+		return z
 
 	def play(self):
 		snake(self,self.population)

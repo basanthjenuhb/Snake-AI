@@ -1,6 +1,7 @@
 from dna import *
 import numpy as np , logging
 from random import *
+from threading import Thread
 
 logging.basicConfig(filename='info.log',level=logging.DEBUG)
 class population:
@@ -12,9 +13,14 @@ class population:
 		self.pop = [ neuralNetwork(self) for i in range(self.size) ]
 
 	def calculateFitness(self):
+		threads = []
+		print "Generation: start ", population.generation
 		for member in self.pop:
-			member.play()
-			logging.info(member.score)
+			# member.play()
+			threads.append(Thread(target = member.play))
+		for t in threads:t.start()
+		for t in threads:t.join()
+		print "Generation: end ", population.generation
 		population.generation += 1
 
 	def reproduce(self):

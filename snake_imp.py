@@ -7,11 +7,14 @@ class snake:
 	pygame.init()
 	i = 0
 	s = pygame.display.set_mode((600, 600))
+	s.fill((255,255,255))
 	pygame.display.set_caption('Snake')
 	appleimage = pygame.Surface((20, 20))
 	appleimage.fill((0, 255, 0))
 	img = pygame.Surface((20, 20))
 	img.fill((255, 0, 0))
+	clear = pygame.Surface((20, 20))
+	clear.fill((255, 255, 255))
 	f = pygame.font.Font(None,30)
 	clock = pygame.time.Clock()
 	def __init__(self,net,population):
@@ -22,8 +25,9 @@ class snake:
 		self.hits = 0
 		self.distance = 0
 		self.net = net
-		self.a , self.b = random.randint(0, 590) , random.randint(0, 590)
-		self.applepos = ( self.a - self.a % 20 , self.b - self.b % 20 )
+		self.a , self.b = random.randint(100, 500) , random.randint(100, 500)
+		self.applepos = ( self.a  , self.b )
+		# self.applepos = ( self.a - self.a % 20 , self.b - self.b % 20 )
 		self.population = population
 		self.play()
 
@@ -32,27 +36,34 @@ class snake:
 		else:return False
 
 	def die(self , screen , score):
+		for i in range(0, len(self.xs)):
+			snake.s.blit(snake.clear, (self.xs[i], self.ys[i]))
+		snake.s.blit(snake.clear, (self.applepos[0] , self.applepos[1] ))
+		pygame.display.update()
+		# print "Generation: "+ str(self.population.generation) + " max score: " + str(snake.max_score) + " Max Hits:" + str(snake.max_hits)
 		self.net.score = score
 		if score > snake.max_score:
 			snake.max_score = score
 		if self.hits > snake.max_hits:
 			snake.max_hits = self.hits
-		print self.hits
+			print "Max hits: ", snake.max_hits
+		# print self.hits
 
 	def getDistance(self):
 		return math.sqrt( (self.applepos[0] - self.xs[0]) ** 2 + (self.applepos[0] - self.xs[0]) ** 2 )
 
 	def move(self):
-		# snake.clock.tick(50)
+		snake.clock.tick(20)
 		i = len(self.xs)-1
 		i = len(self.xs)-1
-		while i >= 2:
-			if self.collide(self.xs[0], self.xs[i], self.ys[0], self.ys[i], 20, 20, 20, 20):
-				self.die(self.s, self.score)
-				return True
-			i-= 1
+		# while i >= 2:
+		# 	if self.collide(self.xs[0], self.xs[i], self.ys[0], self.ys[i], 20, 20, 20, 20):
+		# 		self.die(self.s, self.score)
+		# 		return True
+		# 	i-= 1
 		if self.collide(self.xs[0], self.applepos[0], self.ys[0], self.applepos[1], 20, 20, 20, 20):
 			self.score += 5
+			snake.s.blit(snake.clear, (self.applepos[0] , self.applepos[1] ))
 			self.hits += 1
 			self.xs.append(700)
 			self.ys.append(700)
@@ -60,9 +71,10 @@ class snake:
 			self.applepos = ( self.a - self.a % 20 , self.b - self.b % 20 )
 			self.distance = self.getDistance()
 		if self.xs[0] < 0 or self.xs[0] > 580 or self.ys[0] < 0 or self.ys[0] > 580:
-			self.die(self.s, self.score)
+			self.die(snake.s, self.score)
 			return True
 		i = len(self.xs)-1
+		snake.s.blit(snake.clear, (self.xs[-1], self.ys[-1]))
 		while i >= 1:
 			self.xs[i] = self.xs[i-1]
 			self.ys[i] = self.ys[i-1]
@@ -71,14 +83,16 @@ class snake:
 		elif self.dirs==1:self.xs[0] += 20
 		elif self.dirs==2:self.ys[0] -= 20
 		elif self.dirs==3:self.xs[0] -= 20	
-		self.s.fill((255, 255, 255))
-		for i in range(0, len(self.xs)):
-			self.s.blit(self.img, (self.xs[i], self.ys[i]))
-		self.s.blit(self.appleimage, self.applepos)
-		t=self.f.render("Generation: "+ str(self.population.generation) + " Member: "+ str(self.population.pop.index(self.net)+1) + " max score: " + str(snake.max_score) + " Max Hits:" + str(snake.max_hits), True, (0, 0, 0))
-		self.s.blit(t, (10, 10))
-		t=self.f.render("Hits: " + str(self.hits) + "  Score: " + str(self.score), True, (0, 0, 0))
-		self.s.blit(t, (10, 30))
+		# self.s.fill((255, 255, 255))
+		# for i in range(0, len(self.xs)):
+		snake.s.blit(snake.img, (self.xs[i], self.ys[i]))
+		snake.s.blit(self.appleimage, self.applepos)
+		# t=self.f.render("Generation: "+ str(self.population.generation) + " Member: "+ str(self.population.pop.index(self.net)+1) + " max score: " + str(snake.max_score) + " Max Hits:" + str(snake.max_hits), True, (255, 255, 255))
+		# print "Generation: "+ str(self.population.generation) + " max score: " + str(snake.max_score) + " Max Hits:" + str(snake.max_hits)
+		# self.s.blit(t, (10, 10))
+		# print "Hits: " + str(self.hits) + "  Score: " + str(self.score)
+		# t=self.f.render("Hits: " + str(self.hits) + "  Score: " + str(self.score), True, (255, 255, 255))
+		# self.s.blit(t, (10, 30))
 		pygame.display.update()
 		return False
 
@@ -124,7 +138,7 @@ class snake:
 		self.move()
 
 	def play(self):
-		for i in range(2000):
+		for i in range(500):
 			if(self.move()):
 				return
 			self.select(self.forward())
@@ -135,3 +149,4 @@ class snake:
 			self.distance = self.getDistance()
 			# pygame.image.save(snake.s , "video/screenshot" + str(snake.i) + ".jpeg")
 			# snake.i += 1
+		self.die(snake.s , self.score)
