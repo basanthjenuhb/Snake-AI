@@ -17,6 +17,8 @@ class neuralNetwork:
 		self.W1 = np.random.randn( self.inputLayerSize , self.hiddenLayerSize )
 		self.W2 = np.random.randn( self.hiddenLayerSize , self.outputLayerSize )
 
+	def __str__(self):
+		return "W1: "+str(self.W1)+" W2: "+str(self.W2)+" B1: "+str(self.b1)+" B2: "+str(self.b2)
 
 	def forward(self , X):
 		self.z2 = np.dot(X , self.W1) + self.b1

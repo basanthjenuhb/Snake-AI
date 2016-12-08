@@ -1,6 +1,7 @@
-import pygame , random , sys , math , time , numpy as np
+import pygame , random , sys , math , time , numpy as np , logging
 from pygame.locals import *
 
+logging.basicConfig(filename='info.log',level=logging.DEBUG)
 class snake:
 	max_score = 0
 	max_hits = 0
@@ -24,6 +25,7 @@ class snake:
 		self.score = 0
 		self.hits = 0
 		self.distance = 0
+		self.moves = 50
 		self.net = net
 		self.a , self.b = random.randint(0, 500) , random.randint(0, 500)
 		self.applepos = ( self.a  , self.b )
@@ -47,13 +49,14 @@ class snake:
 		if self.hits > snake.max_hits:
 			snake.max_hits = self.hits
 			print "Max hits: ", snake.max_hits
+			logging.info("Hits:"+str(self.hits)+self.net.__str__())
 		# print self.hits
 
 	def getDistance(self):
 		return math.sqrt( (self.applepos[0] - self.xs[0]) ** 2 + (self.applepos[0] - self.xs[0]) ** 2 )
 
 	def move(self):
-		snake.clock.tick(20)
+		# snake.clock.tick(20)
 		i = len(self.xs)-1
 		i = len(self.xs)-1
 		# Uncomment these lines to make the snake die if it collides with itself
@@ -64,6 +67,7 @@ class snake:
 		# 	i-= 1
 		if self.collide(self.xs[0], self.applepos[0], self.ys[0], self.applepos[1], 20, 20, 20, 20):
 			self.score += 10
+			self.moves = 50
 			snake.s.blit(snake.clear, (self.applepos[0] , self.applepos[1] ))
 			self.hits += 1
 			self.xs.append(700)
@@ -71,19 +75,27 @@ class snake:
 			self.a , self.b = random.randint(0, 590) , random.randint(0, 590)
 			self.applepos = ( self.a - self.a % 20 , self.b - self.b % 20 )
 			self.distance = self.getDistance()
-		if self.xs[0] < 0 or self.xs[0] > 580 or self.ys[0] < 0 or self.ys[0] > 580:
-			self.die(snake.s, self.score)
-			return True
+		# if self.xs[0] < 0 or self.xs[0] > 580 or self.ys[0] < 0 or self.ys[0] > 580:
+		# 	self.die(snake.s, self.score)
+		# 	return True
 		i = len(self.xs)-1
 		snake.s.blit(snake.clear, (self.xs[-1], self.ys[-1]))
 		while i >= 1:
 			self.xs[i] = self.xs[i-1]
 			self.ys[i] = self.ys[i-1]
 			i -= 1
-		if self.dirs==0:self.ys[0] += 20
-		elif self.dirs==1:self.xs[0] += 20
-		elif self.dirs==2:self.ys[0] -= 20
-		elif self.dirs==3:self.xs[0] -= 20	
+		# if self.dirs==0:self.ys[0] += 20
+		# elif self.dirs==1:self.xs[0] += 20
+		# elif self.dirs==2:self.ys[0] -= 20
+		# elif self.dirs==3:self.xs[0] -= 20
+		if self.dirs==0:self.ys[0] = (self.ys[0] + 20) % 600
+		elif self.dirs==1:self.xs[0] = (self.xs[0] + 20) % 600
+		elif self.dirs==2:
+			self.ys[0] = (self.ys[0] - 20)
+			if self.ys[0] < 0:self.ys[0] = 600
+		elif self.dirs==3:
+			self.xs[0] = (self.xs[0] - 20)
+			if self.xs[0] < 0:self.xs[0] = 600
 		# self.s.fill((255, 255, 255))
 		# for i in range(0, len(self.xs)):
 		snake.s.blit(snake.img, (self.xs[i], self.ys[i]))
@@ -140,7 +152,7 @@ class snake:
 		self.move()
 
 	def play(self):
-		for i in range(500):
+		while self.moves > 0:
 			if(self.move()):
 				return
 			self.select(self.forward())
@@ -149,6 +161,7 @@ class snake:
 			else:
 				self.score -= 3
 			self.distance = self.getDistance()
+			self.moves -= 1
 			# pygame.image.save(snake.s , "video/screenshot" + str(snake.i) + ".jpeg")
 			# snake.i += 1
 		self.die(snake.s , self.score)
