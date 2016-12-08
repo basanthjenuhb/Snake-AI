@@ -8,7 +8,7 @@ class snake:
 	i = 0
 	s = pygame.display.set_mode((600, 600))
 	s.fill((255,255,255))
-	pygame.display.set_caption('Snake')
+	pygame.display.set_caption('Snake - playing')
 	appleimage = pygame.Surface((20, 20))
 	appleimage.fill((0, 255, 0))
 	img = pygame.Surface((20, 20))
@@ -17,7 +17,7 @@ class snake:
 	clear.fill((255, 255, 255))
 	f = pygame.font.Font(None,30)
 	clock = pygame.time.Clock()
-	def __init__(self,net,population):
+	def __init__(self,net):
 		self.xs = [290, 290, 290, 290, 290]
 		self.ys = [290, 270, 250, 230, 210]
 		self.dirs = 0
@@ -28,7 +28,7 @@ class snake:
 		self.a , self.b = random.randint(0, 500) , random.randint(0, 500)
 		self.applepos = ( self.a  , self.b )
 		self.applepos = ( self.a - self.a % 20 , self.b - self.b % 20 )
-		self.population = population
+		# self.population = population
 		self.play()
 
 	def collide(self,x1, x2, y1, y2, w1, w2, h1, h2):
@@ -71,19 +71,23 @@ class snake:
 			self.a , self.b = random.randint(0, 590) , random.randint(0, 590)
 			self.applepos = ( self.a - self.a % 20 , self.b - self.b % 20 )
 			self.distance = self.getDistance()
-		if self.xs[0] < 0 or self.xs[0] > 580 or self.ys[0] < 0 or self.ys[0] > 580:
-			self.die(snake.s, self.score)
-			return True
+		# if self.xs[0] < 0 or self.xs[0] > 580 or self.ys[0] < 0 or self.ys[0] > 580:
+		# 	self.die(snake.s, self.score)
+		# 	return True
 		i = len(self.xs)-1
 		snake.s.blit(snake.clear, (self.xs[-1], self.ys[-1]))
 		while i >= 1:
 			self.xs[i] = self.xs[i-1]
 			self.ys[i] = self.ys[i-1]
 			i -= 1
-		if self.dirs==0:self.ys[0] += 20
-		elif self.dirs==1:self.xs[0] += 20
-		elif self.dirs==2:self.ys[0] -= 20
-		elif self.dirs==3:self.xs[0] -= 20	
+		if self.dirs==0:self.ys[0] = (self.ys[0] + 20)%600
+		elif self.dirs==1:self.xs[0] = (self.xs[0] + 20)%600
+		elif self.dirs==2:
+			self.ys[0] = (self.ys[0] - 20)
+			if self.ys[0] < 0:self.ys[0] = 600
+		elif self.dirs==3:
+			self.xs[0] = (self.xs[0] - 20)
+			if self.xs[0] < 0:self.xs[0] = 600
 		# self.s.fill((255, 255, 255))
 		# for i in range(0, len(self.xs)):
 		snake.s.blit(snake.img, (self.xs[i], self.ys[i]))
