@@ -23,6 +23,7 @@ class snake:
 		self.dirs = 0
 		self.score = 0
 		self.hits = 0
+		self.moves = 50
 		self.distance = 0
 		self.net = net
 		self.a , self.b = random.randint(0, 500) , random.randint(0, 500)
@@ -66,6 +67,7 @@ class snake:
 			self.score += 10
 			snake.s.blit(snake.clear, (self.applepos[0] , self.applepos[1] ))
 			self.hits += 1
+			self.moves = 50
 			self.xs.append(700)
 			self.ys.append(700)
 			self.a , self.b = random.randint(0, 590) , random.randint(0, 590)
@@ -144,7 +146,7 @@ class snake:
 		self.move()
 
 	def play(self):
-		for i in range(500):
+		while self.moves >= 0:
 			if(self.move()):
 				return
 			self.select(self.forward())
@@ -153,6 +155,7 @@ class snake:
 			else:
 				self.score -= 3
 			self.distance = self.getDistance()
+			self.moves -= 1
 			# pygame.image.save(snake.s , "video/screenshot" + str(snake.i) + ".jpeg")
 			# snake.i += 1
 		self.die(snake.s , self.score)
