@@ -27,7 +27,6 @@ class neuralNetwork:
 		self.z3 = np.dot(self.a2,self.W2) + self.b2
 		return self.sigmoid(self.z3)
 
-
 	def sigmoid(self,z):
 		z = 1 / ( 1 + np.exp( -z ) )
 		# for i in range(len(z)):if z[i] < 0:z[i] = 0
