@@ -1,6 +1,7 @@
-import pygame , random , sys , math , time , numpy as np
+import pygame , random , sys , math , time , numpy as np , logging
 from pygame.locals import *
 
+logging.basicConfig(filename='info.log',level=logging.DEBUG)
 class snake:
 	max_score = 0
 	max_hits = 0
@@ -25,6 +26,7 @@ class snake:
 		self.hits = 0
 		self.moves = 50
 		self.distance = 0
+		self.moves = 30
 		self.net = net
 		self.a , self.b = random.randint(0, 500) , random.randint(0, 500)
 		self.applepos = ( self.a  , self.b )
@@ -48,13 +50,17 @@ class snake:
 		if self.hits > snake.max_hits:
 			snake.max_hits = self.hits
 			print "Max hits: ", snake.max_hits
+			logging.info("Hits:"+str(self.hits)+self.net.__str__())
+		if self.hits > 50:
+			print "hits: ", self.hits
+			logging.info("Hits:"+str(self.hits)+self.net.__str__())
 		# print self.hits
 
 	def getDistance(self):
 		return math.sqrt( (self.applepos[0] - self.xs[0]) ** 2 + (self.applepos[0] - self.xs[0]) ** 2 )
 
 	def move(self):
-		snake.clock.tick(20)
+		# snake.clock.tick(20)
 		i = len(self.xs)-1
 		i = len(self.xs)-1
 		# Uncomment these lines to make the snake die if it collides with itself
@@ -65,6 +71,7 @@ class snake:
 		# 	i-= 1
 		if self.collide(self.xs[0], self.applepos[0], self.ys[0], self.applepos[1], 20, 20, 20, 20):
 			self.score += 10
+			self.moves = 30
 			snake.s.blit(snake.clear, (self.applepos[0] , self.applepos[1] ))
 			self.hits += 1
 			self.moves = 50
@@ -82,8 +89,12 @@ class snake:
 			self.xs[i] = self.xs[i-1]
 			self.ys[i] = self.ys[i-1]
 			i -= 1
-		if self.dirs==0:self.ys[0] = (self.ys[0] + 20)%600
-		elif self.dirs==1:self.xs[0] = (self.xs[0] + 20)%600
+		# if self.dirs==0:self.ys[0] += 20
+		# elif self.dirs==1:self.xs[0] += 20
+		# elif self.dirs==2:self.ys[0] -= 20
+		# elif self.dirs==3:self.xs[0] -= 20
+		if self.dirs==0:self.ys[0] = (self.ys[0] + 20) % 600
+		elif self.dirs==1:self.xs[0] = (self.xs[0] + 20) % 600
 		elif self.dirs==2:
 			self.ys[0] = (self.ys[0] - 20)
 			if self.ys[0] < 0:self.ys[0] = 600
@@ -146,7 +157,7 @@ class snake:
 		self.move()
 
 	def play(self):
-		while self.moves >= 0:
+		while self.moves > 0:
 			if(self.move()):
 				return
 			self.select(self.forward())

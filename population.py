@@ -14,7 +14,7 @@ class population:
 
 	def calculateFitness(self):
 		threads = []
-		print "Generation:", population.generation
+		print("Generation:", population.generation)
 		for member in self.pop:
 			# member.play()
 			threads.append(Thread(target = member.play))
