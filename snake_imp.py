@@ -44,23 +44,14 @@ class snake:
 		snake.s.blit(snake.clear, (self.applepos[0] , self.applepos[1] ))
 		pygame.display.update()
 		# print "Generation: "+ str(self.population.generation) + " max score: " + str(snake.max_score) + " Max Hits:" + str(snake.max_hits)
-		self.net.score = score
-		if score > snake.max_score:
-			snake.max_score = score
-		if self.hits > snake.max_hits:
-			snake.max_hits = self.hits
-			print "Max hits: ", snake.max_hits
-			logging.info("Hits:"+str(self.hits)+self.net.__str__())
-		if self.hits > 50:
-			print "hits: ", self.hits
-			logging.info("Hits:"+str(self.hits)+self.net.__str__())
+		print("Hits:"+str(self.hits))
 		# print self.hits
 
 	def getDistance(self):
 		return math.sqrt( (self.applepos[0] - self.xs[0]) ** 2 + (self.applepos[0] - self.xs[0]) ** 2 )
 
 	def move(self):
-		# snake.clock.tick(20)
+		snake.clock.tick(20)
 		i = len(self.xs)-1
 		i = len(self.xs)-1
 		# Uncomment these lines to make the snake die if it collides with itself
