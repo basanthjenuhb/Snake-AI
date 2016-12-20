@@ -25,7 +25,7 @@ class snake:
 		self.score = 0
 		self.hits = 0
 		self.distance = 0
-		self.moves = 25
+		self.moves = 100
 		self.net = net
 		self.a , self.b = random.randint(0, 500) , random.randint(0, 500)
 		self.applepos = ( self.a  , self.b )
@@ -49,10 +49,10 @@ class snake:
 		if self.hits > snake.max_hits:
 			snake.max_hits = self.hits
 			print "Max hits: ", snake.max_hits
-			logging.info("Hits:"+str(self.hits)+self.net.__str__())
-		if self.hits > 50:
-			print "hits: ", self.hits
-			logging.info("Hits:"+str(self.hits)+self.net.__str__())
+			logging.info(" Max Hits:"+str(self.hits)+self.net.__str__())
+		# if self.hits > 50:
+		# 	print "hits: ", self.hits
+		# 	logging.info("Hits:"+str(self.hits)+self.net.__str__())
 		# print self.hits
 
 	def getDistance(self):
@@ -70,7 +70,7 @@ class snake:
 		# 	i-= 1
 		if self.collide(self.xs[0], self.applepos[0], self.ys[0], self.applepos[1], 20, 20, 20, 20):
 			self.score += 10
-			self.moves = 25
+			self.moves = 100
 			snake.s.blit(snake.clear, (self.applepos[0] , self.applepos[1] ))
 			self.hits += 1
 			self.xs.append(700)
@@ -78,9 +78,9 @@ class snake:
 			self.a , self.b = random.randint(0, 590) , random.randint(0, 590)
 			self.applepos = ( self.a - self.a % 20 , self.b - self.b % 20 )
 			self.distance = self.getDistance()
-		# if self.xs[0] < 0 or self.xs[0] > 580 or self.ys[0] < 0 or self.ys[0] > 580:
-		# 	self.die(snake.s, self.score)
-		# 	return True
+		if self.xs[0] < 0 or self.xs[0] > 580 or self.ys[0] < 0 or self.ys[0] > 580:
+			self.die(snake.s, self.score)
+			return True
 		i = len(self.xs)-1
 		snake.s.blit(snake.clear, (self.xs[-1], self.ys[-1]))
 		while i >= 1:
@@ -129,8 +129,8 @@ class snake:
 		return x
 
 	def get_input(self):
-		# X = np.array([ self.applepos[0] , self.applepos[1] , self.xs[0] , self.ys[0] ])
-		X = np.array([ self.applepos[0] -  self.xs[0] , self.applepos[1] - self.ys[0] ])
+		X = np.array([ self.applepos[0] , self.applepos[1] , self.xs[0] , self.ys[0] ])
+		# X = np.array([ self.applepos[0] -  self.xs[0] , self.applepos[1] - self.ys[0] ])
 		# X[0] = self.dirs
 		return X
 
