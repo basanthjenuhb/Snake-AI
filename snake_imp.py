@@ -25,7 +25,7 @@ class snake:
 		self.score = 0
 		self.hits = 0
 		self.distance = 0
-		self.moves = 25
+		self.moves = 30
 		self.net = net
 		self.a , self.b = random.randint(0, 500) , random.randint(0, 500)
 		self.applepos = ( self.a  , self.b )
@@ -70,7 +70,7 @@ class snake:
 		# 	i-= 1
 		if self.collide(self.xs[0], self.applepos[0], self.ys[0], self.applepos[1], 20, 20, 20, 20):
 			self.score += 10
-			self.moves = 25
+			self.moves = 30
 			snake.s.blit(snake.clear, (self.applepos[0] , self.applepos[1] ))
 			self.hits += 1
 			self.xs.append(700)
