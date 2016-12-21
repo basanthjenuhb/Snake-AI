@@ -24,7 +24,7 @@ class snake:
 		self.dirs = 0
 		self.score = 0
 		self.hits = 0
-		self.moves = 50
+		self.moves = 30
 		self.distance = 0
 		self.moves = 30
 		self.net = net
@@ -65,7 +65,7 @@ class snake:
 			self.moves = 30
 			snake.s.blit(snake.clear, (self.applepos[0] , self.applepos[1] ))
 			self.hits += 1
-			self.moves = 50
+			self.moves = 30
 			self.xs.append(700)
 			self.ys.append(700)
 			self.a , self.b = random.randint(0, 590) , random.randint(0, 590)
