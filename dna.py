@@ -14,8 +14,8 @@ class neuralNetwork:
 		self.hiddenLayerSize = 4
 		self.b1 , self.b2 = random() , random()
 		# Weights
-		self.W1 = np.random.randn( self.inputLayerSize , self.hiddenLayerSize )
-		self.W2 = np.random.randn( self.hiddenLayerSize , self.outputLayerSize )
+		self.W1 = 2 * np.random.randn( self.inputLayerSize , self.hiddenLayerSize ) - 1
+		self.W2 = 2 * np.random.randn( self.hiddenLayerSize , self.outputLayerSize ) - 1
 
 	def __str__(self):
 		return "W1: "+repr(self.W1)+" W2: "+repr(self.W2)+" B1: "+str(self.b1)+" B2: "+str(self.b2)

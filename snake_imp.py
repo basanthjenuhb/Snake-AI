@@ -50,9 +50,6 @@ class snake:
 			snake.max_hits = self.hits
 			print "Max hits: ", snake.max_hits
 			logging.info("Hits:"+str(self.hits)+self.net.__str__())
-		if self.hits > 50:
-			print "hits: ", self.hits
-			logging.info("Hits:"+str(self.hits)+self.net.__str__())
 		# print self.hits
 
 	def getDistance(self):
@@ -60,6 +57,7 @@ class snake:
 
 	def move(self):
 		# snake.clock.tick(20)
+		print self.moves
 		i = len(self.xs)-1
 		i = len(self.xs)-1
 		# Uncomment these lines to make the snake die if it collides with itself
@@ -109,7 +107,7 @@ class snake:
 		# print "Hits: " + str(self.hits) + "  Score: " + str(self.score)
 		# t=self.f.render("Hits: " + str(self.hits) + "  Score: " + str(self.score), True, (255, 255, 255))
 		# self.s.blit(t, (10, 30))
-		pygame.display.update()
+		# pygame.display.update()
 		return False
 
 	def select(self,x):
