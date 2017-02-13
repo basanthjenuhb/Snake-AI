@@ -52,7 +52,7 @@ class neuralNetwork:
 		node.calculated, node.value = True, self.sigmoid(val)
 		return node.value
 
-	def forward(self, X, Y):
+	def forward(self, X, Y, display=False):
 		if len(X[0]) != len(self.gnome.inputs):
 			print("Input error")
 			return
@@ -64,6 +64,7 @@ class neuralNetwork:
 			for node in self.gnome.outputs:node.value = self.calculate_backward(node)
 			self.output.append([ node.value for node in self.gnome.outputs ])
 		self.score = (4 - sum(Y - np.array(self.output))) ** 2
+		if display:print self.output
 		# print(self.output,self.score)
 
 	def findConnectGene(self, i):
@@ -106,17 +107,17 @@ class population:
 		self.Y = Y
 		self.networks = [ neuralNetwork(2,1) for i in range(size) ]
 		self.matingPool = []
-		self.best = 0
+		self.bestScore, self.bestNetwork = 0, None
 
 	def evaluateFitness(self):
 		for network in self.networks:
 			network.forward(self.X, self.Y)
-			if network.score > self.best:self.best = network.score
+			if network.score > self.bestScore:self.bestScore, self.bestNetwork = network.score, network
 
 	def createMatingPool(self):
 		self.matingPool = []
 		for network in self.networks:
-			for i in range(round(int(network.score))):
+			for i in range(int(round(int(network.score)))):
 				self.matingPool.append(network)
 
 	def newPopulation(self):
@@ -138,4 +139,5 @@ for i in range(10):
 	p.createMatingPool()
 	p.newPopulation()
 	p.mutate(p1, p2)
-	print(p.best)
+	print(p.bestScore)
+p.bestNetwork.forward(X,Y,True)
