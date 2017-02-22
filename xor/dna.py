@@ -1,4 +1,4 @@
-import random, numpy as np, math
+import random, numpy as np, math, copy
 # random.seed(2)
 class nodeGene:
 	def __init__(self, type_, id_, value):
@@ -30,7 +30,7 @@ class genes:
 		self.connectGenes = []
 		for source in self.inputs:
 			for destination in self.outputs:
-				self.connectGenes.append(connectGene(source.id, destination.id, 2 * random.random() - 1, True, self.innovation))
+				self.connectGenes.append(connectGene(source.id, destination.id, 20 * random.random() - 10, True, self.innovation))
 				self.innovation += 1
 		# for x in self.connectGenes:print x
 
@@ -63,8 +63,8 @@ class neuralNetwork:
 				self.gnome.inputs[j].value = X[i][j] 
 			for node in self.gnome.outputs:node.value = self.calculate_backward(node)
 			self.output.append([ node.value for node in self.gnome.outputs ])
-		self.score = (4 - sum(Y - np.array(self.output))) ** 2
-		if display:print self.output
+		self.score = sum(abs(Y - np.array(self.output))) * 10
+		if display:print "The best",np.round(self.output,decimals=2).T
 		# print(self.output,self.score)
 
 	def findConnectGene(self, i):
@@ -81,7 +81,7 @@ class neuralNetwork:
 		self.gnome.connectGenes += disjointGenes
 
 	def mate(self, network):
-		child = neuralNetwork(2,1)
+		child = neuralNetwork(3,1)
 		if child.total < max(self.total, network.total):
 			child.gnome.nodeGenes += [ nodeGene("hidden", i, 0) for i in range(child.total, child.total + ( child.total - max(self.total, network.total) )) ]
 		child.gnome.connectGenes, child.gnome.innovation = [], min(self.gnome.innovation, network.gnome.innovation)
@@ -96,7 +96,7 @@ class neuralNetwork:
 	def mutate(self, p1, p2):
 		for connectGene in self.gnome.connectGenes:
 			if random.random() < p1:
-				pass
+				connectGene.weight = 20 * random.random() - 10
 
 
 
@@ -105,19 +105,20 @@ class population:
 		self.size = size
 		self.X = X
 		self.Y = Y
-		self.networks = [ neuralNetwork(2,1) for i in range(size) ]
+		self.networks = [ neuralNetwork(3,1) for i in range(size) ]
 		self.matingPool = []
 		self.bestScore, self.bestNetwork = 0, None
 
 	def evaluateFitness(self):
 		for network in self.networks:
+			network.score = 0
 			network.forward(self.X, self.Y)
-			if network.score > self.bestScore:self.bestScore, self.bestNetwork = network.score, network
+			if network.score > self.bestScore:self.bestScore, self.bestNetwork = network.score, copy.deepcopy(network)
 
 	def createMatingPool(self):
 		self.matingPool = []
 		for network in self.networks:
-			for i in range(int(round(int(network.score)))):
+			for i in range(int(round(int(network.score) + 1))):
 				self.matingPool.append(network)
 
 	def newPopulation(self):
@@ -130,14 +131,16 @@ class population:
 	def mutate(self, p1, p2):
 		for network in self.networks:network.mutate(p1, p2)
 
-X = [ [0,0], [0,1], [1,0], [1,1] ]
-Y = np.array([ [0] , [1] , [1] , [0]])
-size, p1, p2 = 10, 0.1, 0.5
+X = [ [1,0,0], [1,0,1], [1,1,0], [1,1,1] ]
+Y = np.array([[1,0,0,0]]).T
+size, p1, p2 = 100, 0.2, 0.5
+iterations = 20
 p = population(size, X, Y)
-for i in range(10):
+for i in range(iterations):
 	p.evaluateFitness()
 	p.createMatingPool()
 	p.newPopulation()
 	p.mutate(p1, p2)
-	print(p.bestScore)
+	print "Generation",i
+print "Required",np.logical_not(Y.T).astype(int)
 p.bestNetwork.forward(X,Y,True)
