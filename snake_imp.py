@@ -42,7 +42,6 @@ class snake:
 			snake.s.blit(snake.clear, (self.xs[i], self.ys[i]))
 		snake.s.blit(snake.clear, (self.applepos[0] , self.applepos[1] ))
 		pygame.display.update()
-		# print "Generation: "+ str(self.population.generation) + " max score: " + str(snake.max_score) + " Max Hits:" + str(snake.max_hits)
 		print("Hits:"+str(self.hits))
 		# print self.hits
 
@@ -83,25 +82,21 @@ class snake:
 		# elif self.dirs==1:self.xs[0] += 20
 		# elif self.dirs==2:self.ys[0] -= 20
 		# elif self.dirs==3:self.xs[0] -= 20
-		if self.dirs==0:self.ys[0] = (self.ys[0] + 20) % 600
-		elif self.dirs==1:self.xs[0] = (self.xs[0] + 20) % 600
+		if self.dirs==0:self.ys[0] = (self.ys[0] + 20) % 620
+		elif self.dirs==1:self.xs[0] = (self.xs[0] + 20) % 620
 		elif self.dirs==2:
 			self.ys[0] = (self.ys[0] - 20)
 			if self.ys[0] < 0:self.ys[0] = 600
 		elif self.dirs==3:
 			self.xs[0] = (self.xs[0] - 20)
 			if self.xs[0] < 0:self.xs[0] = 600
-		# self.s.fill((255, 255, 255))
-		# for i in range(0, len(self.xs)):
-		snake.s.blit(snake.img, (self.xs[i], self.ys[i]))
-		snake.s.blit(self.appleimage, self.applepos)
-		# t=self.f.render("Generation: "+ str(self.population.generation) + " Member: "+ str(self.population.pop.index(self.net)+1) + " max score: " + str(snake.max_score) + " Max Hits:" + str(snake.max_hits), True, (255, 255, 255))
-		# print "Generation: "+ str(self.population.generation) + " max score: " + str(snake.max_score) + " Max Hits:" + str(snake.max_hits)
-		# self.s.blit(t, (10, 10))
-		# print "Hits: " + str(self.hits) + "  Score: " + str(self.score)
-		# t=self.f.render("Hits: " + str(self.hits) + "  Score: " + str(self.score), True, (255, 255, 255))
-		# self.s.blit(t, (10, 30))
 		pygame.display.update()
+		self.s.fill((255, 255, 255))
+		for i in range(0, len(self.xs)):
+			snake.s.blit(snake.img, (self.xs[i], self.ys[i]))
+		snake.s.blit(self.appleimage, self.applepos)
+		t= self.f.render("Hits:" + str(self.hits), True, (0, 0, 0))
+		self.s.blit(t, (10, 10))
 		return False
 
 	def select(self,x):
@@ -121,9 +116,7 @@ class snake:
 		return x
 
 	def get_input(self):
-		# X = np.array([ self.applepos[0] , self.applepos[1] , self.xs[0] , self.ys[0] ])
 		X = np.array([ self.applepos[0] -  self.xs[0] , self.applepos[1] - self.ys[0] ])
-		# X[0] = self.dirs
 		return X
 
 	def up(self):
@@ -157,6 +150,4 @@ class snake:
 				self.score -= 3
 			self.distance = self.getDistance()
 			self.moves -= 1
-			# pygame.image.save(snake.s , "video/screenshot" + str(snake.i) + ".jpeg")
-			# snake.i += 1
 		self.die(snake.s , self.score)
