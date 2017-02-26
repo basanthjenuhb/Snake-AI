@@ -11,7 +11,8 @@ dna.py - Maintains data for a single neural network
 
 snake_imp.py - Manages the snake game
 
-To Directly see the trained snake
-'''
-$ git checkout playing
-$ python2 play.py
+To Directly see the trained snake:
+
+> $ git checkout playing
+
+> $ python2 play.py
