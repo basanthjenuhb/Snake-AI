@@ -77,42 +77,131 @@ class gnome:
 				gene.weight = random.uniform(-self.mutationRate['weightsRange'], self.mutationRate['weightsRange'])
 
 	def updateNodes(self, newNode):
+		'''
+		Update the Genes as we add a new node to the network. To the array containing hidden nodes and to the array containing all the nodes.
+		'''
 		self.hidden.append(newNode)
 		self.nodeGenes = self.inputs + self.outputs + self.hidden
 		self.totalNodes = len(self.nodeGenes)
 
 	def addNode(self):
 		'''
-		Function to add a node to the network
+		Function to add a node to the network.
+		Randomly pick a connection gene. Add a new node between than connection.
+		Assign a weight 1 to link leading to new node and the old weight leading from the new node.
 		'''
 		newNode = nodeGene("hidden", self.totalNodes, 0)
 		oldConnectGene = self.connectGenes[random.randrange(len(self.connectGenes))]
 		oldConnectGene.enabled = False
+		# Gene to the new node.
 		innovation = population.updateInnovation((oldConnectGene.source, newNode.id))
 		newConnectGene1 = connectGene(oldConnectGene.source, newNode.id, 1, True, innovation)
+		# Gene from the new node
 		innovation = population.updateInnovation((newNode.id, oldConnectGene.destination))
-		newConnectGene2 = connectGene(newNode.id, oldConnectGene.destination, random.uniform(-self.mutationRate['weightsRange'], self.mutationRate['weightsRange']), True, innovation)
+		newConnectGene2 = connectGene(newNode.id, oldConnectGene.destination, oldConnectGene.weight, True, innovation)
+		
 		self.connectGenes += [ newConnectGene1, newConnectGene2 ]
 		self.updateNodes(newNode)
+
+	def connectionExists(self, connection):
+		'''
+		Function to see if a connection already exists in the genes.destination
+		'''
+		connections = [ (connect.source, connect.destination) for connect in self.connectGenes ]
+		return connection in connections
 
 	def addConnection(self):
 		'''
 		Function to connect 2 unconected nodes
 		'''
+		node1 = self.nodeGenes[random.randrange(len(self.nodeGenes))]
+		node2 = self.nodeGenes[random.randrange(len(self.nodeGenes))]
+		if node1.type == "input" and node2.type == "input":
+			return
+		if node1.type == "output" and node2.type == "output":
+			return
+		if node1.type == "output" or node2.type == "input":
+			node1, node2 = node2, node1
+		if self.connectionExists((node1.id, node2.id)):
+			return
+		innovation = population.updateInnovation((node1.id, node2.id))
+		self.connectGenes.append(connectGene(node1.id, node2.id, random.uniform(-self.mutationRate['weightsRange'], self.mutationRate['weightsRange']), True, innovation))
 		pass
 
+	def excessDisjointWeight(self, member):
+		'''
+		Function to return
+		1. # Excess genes
+		2. # Disjoint Genes
+		3. Avg weight differences
+		'''
+		innovation1 = [ (gene.innovation, gene.weight) for gene in self.connectGenes ]
+		innovation2 = [ (gene.innovation, gene.weight) for gene in member.connectGenes ]
+		innovation1 = sorted(innovation1, key=lambda x:x[0])
+		innovation2 = sorted(innovation2, key=lambda x:x[0])
+		excess, disjoint = 0, 0
+		i, j, W = 0, 0, 0.0
+		while i < len(innovation1) and j < len(innovation2):
+			if innovation1[i][0] == innovation2[j][0]: # Weight differences are calculated if innovation numbers match
+				i, j, W = i + 1, j + 1, W + abs(innovation1[i][1] - innovation2[j][1])
+			elif innovation1[i][0] < innovation2[j][0]:
+				disjoint += 1
+				i += 1
+			elif innovation1[i][0] > innovation2[j][0]:
+				disjoint += 1
+				j += 1
+		excess = len(innovation1[i:]) + len(innovation2[j:])
+		# print([k[0] for k in innovation1],i)
+		# print([k[0] for k in innovation2],j)
+		# print(excess,disjoint,W)
+		return excess,disjoint, W / float(min(i,j))
+
+	def distance(self, member, delta):
+		'''
+		Function to get a compatibility distance between 2 gnomes
+		d = c1 * E / N + c2 * D / N + c3 * W
+		E - # Excess genes
+		D - # Disjoint Genes
+		W - Average weight differences
+		N - No. of Genes in larger gnome.
+		'''
+		N = max(len(self.connectGenes), len(member.connectGenes))
+		if N < 20:N = 1
+		E, D, W = self.excessDisjointWeight(member)
+		dist = delta['excess'] * E / N + delta['disjoint'] * D / N + delta['weights'] * W
+		# print(dist)
+		return dist < delta['threshold']
+
 	def mutate(self):
+		'''
+		Function to apply:
+		1. Increase/Decrease the mutation rates randomly
+		2. Mutate to Perturb weights of genes
+		3. Mutate to Add a node to the network
+		4. Mutate to connect 2 unconnected nodes of network
+		'''
 		for rate in self.mutationRate:
 			if random.random() <= 0.5:
 				self.mutationRate[rate] *= 0.95
 			else:
 				self.mutationRate[rate] *= 1.05
+		# Mutation to perturb weight
 		if random.random() < self.mutationRate['perturbWeight']:
 			self.perturbWeight()
-		if random.random() < self.mutationRate['addNode']:
-			self.addNode()
-		if random.random() < self.mutationRate['addConnection']:
-			self.addConnection()
+		
+		# Mutation to add a new node to the network
+		p = self.mutationRate['addNode']
+		while p > 0:
+			if random.random() < p:
+				self.addNode()
+			p -= 1
+		
+		# Mutation to add a new connection to the network
+		p = self.mutationRate['addConnection']
+		while p > 0:
+			if random.random() < p:
+				self.addConnection()
+			p -= 1
 
 
 	def __repr__(self):
@@ -137,7 +226,7 @@ class population:
 	innovation = 0
 	structuralChanges = []
 	numInputs, numOutputs = 0, 0
-	def __init__(self, size, inputs, outputs, mutationRate):
+	def __init__(self, size, inputs, outputs, mutationRate, delta):
 		self.size = size
 		population.numInputs, population.numOutputs = inputs, outputs
 		self.generation = 0
@@ -145,6 +234,7 @@ class population:
 		self.species = []
 		population.innovation = inputs * outputs - 1
 		self.mutationRate = copy.deepcopy(mutationRate)
+		self.delta = delta
 		self.maxfitness = 0
 		self.__initializePopulation()
 
@@ -157,7 +247,7 @@ class population:
 			member.mutate()
 			self.members.append(member)		# Adding the member to the Total population
 			self.addToSpecies(member)
-			print(member)
+			# print(member)
 
 	@staticmethod
 	def updateInnovation(change):
@@ -173,14 +263,24 @@ class population:
 		return population.innovation
 
 	def addToSpecies(self, member):
-		for specie in self.species:pass
+		for specie in self.species:
+			if specie[0].distance(member, self.delta):
+				specie.append(member)
+				return
+		self.species.append([member])
 
-mutationRate = {}
+mutationRate, delta = {}, {}
 mutationRate['weightsRange'] = 4		 # if value is x, then weights will be in [-x,x]
-mutationRate['perturbWeight'] = 0.1
-mutationRate['perturbWeightBias'] = 0.8
-mutationRate['addNode'] = 0.5
-mutationRate['addConnection'] = 0.1
-populationSize = 10
+mutationRate['perturbWeight'] = 0.25
+mutationRate['perturbWeightBias'] = 0.9
+mutationRate['addNode'] = 2
+mutationRate['addConnection'] = 0.5
+
+delta['excess'] = 1
+delta['disjoint'] = 1
+delta['weights'] = 0.4
+delta['threshold'] = 4
+
+populationSize = 100
 inputs, outputs = 3, 1
-population(populationSize, inputs, outputs, mutationRate)
+population(populationSize, inputs, outputs, mutationRate, delta)
