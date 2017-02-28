@@ -55,7 +55,7 @@ class gnome:
 		self.outputs = [ nodeGene("output", j, 0) for j in range(inputs ,inputs + outputs) ]
 		self.hidden = []
 		self.totalNodes = inputs + outputs
-		self.nodeGenes = self.inputs + self.outputs
+		self.nodeGenes = self.inputs + self.outputs + self.hidden
 		self.innovation = 0
 		self.fitness = 0
 		self.connectGenes = []
@@ -76,11 +76,24 @@ class gnome:
 			else:
 				gene.weight = random.uniform(-self.mutationRate['weightsRange'], self.mutationRate['weightsRange'])
 
+	def updateNodes(self, newNode):
+		self.hidden.append(newNode)
+		self.nodeGenes = self.inputs + self.outputs + self.hidden
+		self.totalNodes = len(self.nodeGenes)
+
 	def addNode(self):
 		'''
 		Function to add a node to the network
 		'''
-		pass
+		newNode = nodeGene("hidden", self.totalNodes, 0)
+		oldConnectGene = self.connectGenes[random.randrange(len(self.connectGenes))]
+		oldConnectGene.enabled = False
+		innovation = population.updateInnovation((oldConnectGene.source, newNode.id))
+		newConnectGene1 = connectGene(oldConnectGene.source, newNode.id, 1, True, innovation)
+		innovation = population.updateInnovation((newNode.id, oldConnectGene.destination))
+		newConnectGene2 = connectGene(newNode.id, oldConnectGene.destination, random.uniform(-self.mutationRate['weightsRange'], self.mutationRate['weightsRange']), True, innovation)
+		self.connectGenes += [ newConnectGene1, newConnectGene2 ]
+		self.updateNodes(newNode)
 
 	def addConnection(self):
 		'''
@@ -103,7 +116,7 @@ class gnome:
 
 
 	def __repr__(self):
-		return "Nodes:\n" + str(self.nodeGenes) + "\nConnectGenes:\n" + str(self.connectGenes)
+		return "\nNodes:" + str(self.totalNodes) + "\n" + str(self.nodeGenes) + "\nConnectGenes:" + str(len(self.connectGenes)) + "\n" + str(self.connectGenes) + "\n"
 
 class population:
 	'''
@@ -121,13 +134,16 @@ class population:
 			Breeding Mutate
 		members: To contain all members of the population
 	'''
+	innovation = 0
+	structuralChanges = []
+	numInputs, numOutputs = 0, 0
 	def __init__(self, size, inputs, outputs, mutationRate):
 		self.size = size
-		self.numInputs, self.numOutputs = inputs, outputs
+		population.numInputs, population.numOutputs = inputs, outputs
 		self.generation = 0
 		self.members = []
 		self.species = []
-		self.innovation = inputs * outputs
+		population.innovation = inputs * outputs - 1
 		self.mutationRate = copy.deepcopy(mutationRate)
 		self.maxfitness = 0
 		self.__initializePopulation()
@@ -143,6 +159,19 @@ class population:
 			self.addToSpecies(member)
 			print(member)
 
+	@staticmethod
+	def updateInnovation(change):
+		'''
+		If a structural change is already encountered before, Its innovation number is returned.
+		Else, The innovation number is incremented and the value is returned.
+		'''
+		# print(change,population.structuralChanges)
+		if change in population.structuralChanges:
+			return population.numInputs * population.numOutputs + population.structuralChanges.index(change)
+		population.structuralChanges.append(change)
+		population.innovation += 1
+		return population.innovation
+
 	def addToSpecies(self, member):
 		for specie in self.species:pass
 
@@ -150,8 +179,8 @@ mutationRate = {}
 mutationRate['weightsRange'] = 4		 # if value is x, then weights will be in [-x,x]
 mutationRate['perturbWeight'] = 0.1
 mutationRate['perturbWeightBias'] = 0.8
-mutationRate['addNode'] = 0.1
+mutationRate['addNode'] = 0.5
 mutationRate['addConnection'] = 0.1
-populationSize = 1
+populationSize = 10
 inputs, outputs = 3, 1
 population(populationSize, inputs, outputs, mutationRate)
