@@ -1,4 +1,4 @@
-import numpy as np, math, copy, random
+import numpy as np, math, copy, random, sys
 
 class nodeGene:
 	'''
@@ -189,11 +189,17 @@ class gnome:
 		oldConnectGene.enabled = False
 		# Gene to the new node.
 		innovation = population.updateInnovation((oldConnectGene.source, newNode.id))
-		if innovation == -1:return
+		if innovation == -1:
+			print("Error1")
+			sys.exit()
+			return
 		newConnectGene1 = connectGene(oldConnectGene.source, newNode.id, 1, True, innovation,"Add Node")
 		# Gene from the new node
 		innovation = population.updateInnovation((newNode.id, oldConnectGene.destination))
-		if innovation == -1:return
+		if innovation == -1:
+			print("Error2")
+			sys.exit()
+			return
 		newConnectGene2 = connectGene(newNode.id, oldConnectGene.destination, oldConnectGene.weight, True, innovation, "Add Node")
 		
 		self.connectGenes += [ newConnectGene1, newConnectGene2 ]
@@ -205,6 +211,15 @@ class gnome:
 		'''
 		connections = [ (connect.source, connect.destination) for connect in self.connectGenes ]
 		return connection in connections
+
+	def getPredecessors(self, nodeId):
+		if nodeId < len(self.inputs):return []
+		sources = [ connect.source for connect in self.connectGenes if connect.destination == nodeId ]
+		allSources = []
+		allSources += sources
+		for source in sources:
+			allSources += self.getPredecessors(source)
+		return allSources
 
 	def addConnection(self):
 		'''
@@ -221,9 +236,13 @@ class gnome:
 		if node1.type == "output" or node2.type == "input":
 			node1, node2 = node2, node1
 		if node1.type == "hidden" and node2.type == "hidden":
-			if node1.id > node2.id:
+			# if node1.id > node2.id:
+				# node1, node2 = node2, node1
+			if node2.id in self.getPredecessors(node1.id):
 				node1, node2 = node2, node1
-		if self.connectionExists((node1.id, node2.id)):
+				if node2.id in self.getPredecessors(node1.id):
+					return
+		if self.connectionExists((node1.id, node2.id)) or self.connectionExists((node2.id, node1.id)):
 			return
 		innovation = population.updateInnovation((node1.id, node2.id))
 		if innovation == -1:return
@@ -384,10 +403,8 @@ class population:
 		Else, The innovation number is incremented and the value is returned.
 		'''
 		# print(change,population.structuralChanges)
-		a,b = change
-		if (b,a) in population.structuralChanges:return -1
 		if change in population.structuralChanges:
-			return population.numInputs * population.numOutputs + population.structuralChanges.index(change)
+			return population.structuralChanges.index(change)
 		population.structuralChanges.append(change)
 		population.innovation += 1
 		return population.innovation
@@ -514,15 +531,15 @@ mutationRate['weightsRange'] = 4		 # if value is x, then weights will be in [-x,
 mutationRate['perturbWeight'] = 0.8
 mutationRate['perturbBias'] = 0.25
 mutationRate['perturbWeightBias'] = 0.9
-mutationRate['addNode'] = 0.1
-mutationRate['addConnection'] = 0.3
+mutationRate['addNode'] = 0.01
+mutationRate['addConnection'] = 0.03
 mutationRate['reproduce'] = 0.75
 mutationRate['step'] = 0.1
 
 delta['excess'] = 1
 delta['disjoint'] = 2
 delta['weights'] = 0.4
-delta['threshold'] = 6
+delta['threshold'] = 4
 delta['staleness'] = 15
 populationSize = 300
 inputs, outputs = 2, 1
