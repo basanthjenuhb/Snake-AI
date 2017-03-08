@@ -70,7 +70,8 @@ class gnome:
 		# Forming a minimal network. Connecting all the inputs to all outputs.
 		for source in self.inputs:
 			for destination in self.outputs:
-				self.connectGenes.append(connectGene(source.id, destination.id, random.uniform(-self.mutationRate['weightsRange'], self.mutationRate['weightsRange']), True, self.innovation,"Initialization"))
+				# self.connectGenes.append(connectGene(source.id, destination.id, random.uniform(-self.mutationRate['weightsRange'], self.mutationRate['weightsRange']), True, self.innovation,"Initialization"))
+				self.connectGenes.append(connectGene(source.id, destination.id, mutationRate['weightsRange'] * random.random() - mutationRate['weightsRange'] / 2, True, self.innovation,"Initialization"))
 				self.innovation += 1
 
 	def sigmoid(self, x):
@@ -138,9 +139,9 @@ class gnome:
 				extras2.append(copy.deepcopy(genes2[j]))
 				j += 1
 		if self.fitness > mother.fitness:
-			child.connectGenes += extras1
+			child.connectGenes += extras1 + copy.deepcopy(genes1[i:])
 		else:
-			child.connectGenes += extras2
+			child.connectGenes += extras2 + copy.deepcopy(genes2[j:])
 		nodesInConnections = [ connect.source for connect in child.connectGenes ] + [ connect.destination for connect in child.connectGenes ]
 		nodesInChild = [ node.id for node in child.nodeGenes ]
 		for node in nodesInConnections:
@@ -155,9 +156,9 @@ class gnome:
 		'''
 		for gene in self.connectGenes:
 			if random.random() < self.mutationRate['perturbWeightBias']:
-				gene.weight += 2 * mutationRate['step'] * random.uniform(-self.mutationRate['weightsRange'], self.mutationRate['weightsRange']) - mutationRate['step']
+				gene.weight += mutationRate['step'] * (mutationRate['weightsRange'] * random.random() - mutationRate['weightsRange'] / 2)
 			else:
-				gene.weight = random.uniform(-self.mutationRate['weightsRange'], self.mutationRate['weightsRange'])
+				gene.weight = mutationRate['weightsRange'] * random.random() - mutationRate['weightsRange'] / 2
 
 	def perturbBias(self):
 		'''
@@ -165,9 +166,9 @@ class gnome:
 		'''
 		for node in self.nodeGenes:
 			if random.random() < self.mutationRate['perturbWeightBias']:
-				node.bias += 2 * mutationRate['step'] * random.uniform(-self.mutationRate['weightsRange'], self.mutationRate['weightsRange']) - mutationRate['step']
+				node.bias += mutationRate['step'] * (mutationRate['weightsRange'] * random.random() - mutationRate['weightsRange'] / 2)
 			else:
-				node.bias = random.uniform(-self.mutationRate['weightsRange'], self.mutationRate['weightsRange'])
+				node.bias = mutationRate['weightsRange'] * random.random() - mutationRate['weightsRange'] / 2
 
 	def updateNodes(self, newNode):
 		'''
@@ -193,15 +194,14 @@ class gnome:
 			print("Error1")
 			sys.exit()
 			return
-		newConnectGene1 = connectGene(oldConnectGene.source, newNode.id, 1, True, innovation,"Add Node")
+		newConnectGene1 = connectGene(oldConnectGene.source, newNode.id,mutationRate['weightsRange'] * random.random() - mutationRate['weightsRange'] / 2 , True, innovation,"Add Node")
 		# Gene from the new node
 		innovation = population.updateInnovation((newNode.id, oldConnectGene.destination))
 		if innovation == -1:
 			print("Error2")
 			sys.exit()
 			return
-		newConnectGene2 = connectGene(newNode.id, oldConnectGene.destination, oldConnectGene.weight, True, innovation, "Add Node")
-		
+		newConnectGene2 = connectGene(newNode.id, oldConnectGene.destination, mutationRate['weightsRange'] * random.random() - mutationRate['weightsRange'] / 2, True, innovation, "Add Node")
 		self.connectGenes += [ newConnectGene1, newConnectGene2 ]
 		self.updateNodes(newNode)
 
@@ -227,6 +227,8 @@ class gnome:
 		'''
 		node1 = self.nodeGenes[random.randrange(len(self.nodeGenes))]
 		node2 = self.nodeGenes[random.randrange(len(self.nodeGenes))]
+		if self.connectionExists((node1.id, node2.id)) or self.connectionExists((node2.id, node1.id)):
+			return
 		if node1.type == "input" and node2.type == "input":
 			return
 		if node1.id == node2.id:
@@ -236,17 +238,13 @@ class gnome:
 		if node1.type == "output" or node2.type == "input":
 			node1, node2 = node2, node1
 		if node1.type == "hidden" and node2.type == "hidden":
-			# if node1.id > node2.id:
-				# node1, node2 = node2, node1
 			if node2.id in self.getPredecessors(node1.id):
 				node1, node2 = node2, node1
 				if node2.id in self.getPredecessors(node1.id):
 					return
-		if self.connectionExists((node1.id, node2.id)) or self.connectionExists((node2.id, node1.id)):
-			return
 		innovation = population.updateInnovation((node1.id, node2.id))
 		if innovation == -1:return
-		self.connectGenes.append(connectGene(node1.id, node2.id, random.uniform(-self.mutationRate['weightsRange'], self.mutationRate['weightsRange']), True, innovation, "Add Connection"))
+		self.connectGenes.append(connectGene(node1.id, node2.id, mutationRate['weightsRange'] * random.random() - mutationRate['weightsRange'] / 2, True, innovation, "Add Connection"))
 		pass
 
 	def excessDisjointWeight(self, member):
@@ -258,8 +256,8 @@ class gnome:
 		'''
 		innovation1 = [ (gene.innovation, gene.weight) for gene in self.connectGenes ]
 		innovation2 = [ (gene.innovation, gene.weight) for gene in member.connectGenes ]
-		innovation1 = sorted(innovation1, key=lambda x:x[0])
-		innovation2 = sorted(innovation2, key=lambda x:x[0])
+		innovation1 = sorted(innovation1, key = lambda x:x[0])
+		innovation2 = sorted(innovation2, key = lambda x:x[0])
 		excess, disjoint = 0, 0
 		i, j, W = 0, 0, 0.0
 		while i < len(innovation1) and j < len(innovation2):
@@ -293,7 +291,11 @@ class gnome:
 		# print(dist)
 		return dist < delta['threshold']
 
-
+	def enableDisableMutate(self, enable):
+		candidates = [ connect for connect in self.connectGenes if connect.enabled != enable ]
+		if not len(candidates):return
+		candidate = candidates[random.randrange(len(candidates))]
+		candidate.enabled = not candidate.enabled
 
 	def mutate(self):
 		'''
@@ -328,6 +330,12 @@ class gnome:
 			if random.random() < p:
 				self.addConnection()
 			p -= 1
+
+		if random.random() < self.mutationRate['enableConnection']:
+			self.enableDisableMutate(True)
+
+		if random.random() < self.mutationRate['disableConnection']:
+			self.enableDisableMutate(False)
 
 
 	def __repr__(self):
@@ -427,7 +435,7 @@ class population:
 		for specie in self.species:
 			specie.gnomes = sorted(specie.gnomes, key = lambda x: x.fitness, reverse = True)
 			if keepOne:
-				specie.gnomes = specie.gnomes[:1]
+				specie.gnomes = specie.gnomes[:2]
 			else:
 				specie.gnomes = specie.gnomes[:math.ceil(len(specie.gnomes)/2)]
 			if len(specie.gnomes) == 0:
@@ -440,13 +448,13 @@ class population:
 		self.members = []
 		for specie in self.species:
 			self.members += specie.gnomes
-		self.members = sorted(self.members, key = lambda x:x.fitness, reverse = True)
+		self.members = sorted(self.members, key = lambda x:x.fitness)
 		for i in range(len(self.members)):
 			self.members[i].rank = i + 1
-		if self.maxFitness < self.members[0].fitness:
-			self.maxFitness = self.members[0].fitness
-			self.bestGnome = copy.deepcopy(self.members[0])
-		self.generationMaxFitness = self.members[0].fitness
+		if self.maxFitness < self.members[-1].fitness:
+			self.maxFitness = self.members[-1].fitness
+			self.bestGnome = copy.deepcopy(self.members[-1])
+		self.generationMaxFitness = self.members[-1].fitness
 
 	def removeStaleSpecies(self):
 		for specie in self.species:
@@ -499,14 +507,11 @@ class population:
 				newMembers.append(member)
 		self.cullSpecies(True)
 		while len(newMembers) + len(self.species) < self.size:
-			father = self.species[random.randrange(len(self.species))].gnomes[0]
-			mother = self.species[random.randrange(len(self.species))].gnomes[0]
-			child = gnome(self.mutationRate, self.numInputs, self.numOutputs, False)
-			father.crossOver(mother, child)
-			child.mutate()
-			newMembers.append(child)
+			member = self.reproduce(self.species[random.randrange(len(self.species))])
+			newMembers.append(member)
 		for child in newMembers:
 			self.addToSpecies(child)
+		print("\nMembers in each species:",end = " | ")
 		for specie in self.species:print(len(specie.gnomes),end = " ")
 		print()
 		self.generation += 1
@@ -518,16 +523,17 @@ class population:
 			for gnome in specie.gnomes:
 				gnome.evaluateFitness(self.X, self.Y, False)
 
-	def optimize(self, X, Y, iterations):
+	def optimize(self, X, Y, iterations, requiredFitness):
 		self.X, self.Y = X, Y
 		for _ in range(iterations):
 			self.evaluateFitness()
 			self.newGeneration()
-			if self.maxFitness > 38:break
+			if self.maxFitness > requiredFitness:break
+			# self.bestGnome.evaluateFitness(self.X, self.Y, True)
 		self.bestGnome.evaluateFitness(self.X, self.Y, True)
 
 mutationRate, delta = {}, {}
-mutationRate['weightsRange'] = 4		 # if value is x, then weights will be in [-x,x]
+mutationRate['weightsRange'] = 8		 # if value is x, then weights will be in [-x,x]
 mutationRate['perturbWeight'] = 0.8
 mutationRate['perturbBias'] = 0.25
 mutationRate['perturbWeightBias'] = 0.9
@@ -535,6 +541,8 @@ mutationRate['addNode'] = 0.01
 mutationRate['addConnection'] = 0.03
 mutationRate['reproduce'] = 0.75
 mutationRate['step'] = 0.1
+mutationRate['enableConnection'] = 0.4
+mutationRate['disableConnection'] = 0.2
 
 delta['excess'] = 1
 delta['disjoint'] = 2
@@ -544,8 +552,9 @@ delta['staleness'] = 15
 populationSize = 300
 inputs, outputs = 2, 1
 iterations = 500
+requiredFitness = 38	# This is out of 40
 
 X = [[0,0],[0,1],[1,0],[1,1]]
 Y = np.array([[0],[1],[1],[0]])
 p = population(populationSize, inputs, outputs, mutationRate, delta)
-p.optimize(X, Y, iterations)
+p.optimize(X, Y, iterations, requiredFitness)
