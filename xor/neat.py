@@ -451,10 +451,6 @@ class population:
 		self.members = sorted(self.members, key = lambda x:x.fitness)
 		for i in range(len(self.members)):
 			self.members[i].rank = i + 1
-		if self.maxFitness < self.members[-1].fitness:
-			self.maxFitness = self.members[-1].fitness
-			self.bestGnome = copy.deepcopy(self.members[-1])
-		self.generationMaxFitness = self.members[-1].fitness
 
 	def removeStaleSpecies(self):
 		for specie in self.species:
@@ -466,6 +462,8 @@ class population:
 				specie.staleness += 1
 			if specie.staleness > self.delta['staleness']:
 				self.species.remove(specie)
+				if not len(self.species):
+					self.__initializePopulation()
 
 	def calculateAverageFitness(self):
 		for specie in self.species:
@@ -515,13 +513,20 @@ class population:
 		for specie in self.species:print(len(specie.gnomes),end = " ")
 		print()
 		self.generation += 1
-		print("Generation:",self.generation,"Generation Max Fitness:", self.generationMaxFitness," Max Fitness:",self.maxFitness)
+		print("Generation:",self.generation,"Generation Max Fitness:", int(self.generationMaxFitness)," Max Fitness:",int(self.maxFitness))
 		# self.bestGnome.evaluateFitness(self.X, self.Y, True)
 
 	def evaluateFitness(self):
+		self.generationMaxFitness = 0
 		for specie in self.species:
 			for gnome in specie.gnomes:
 				gnome.evaluateFitness(self.X, self.Y, False)
+				if self.maxFitness < gnome.fitness:
+					self.maxFitness = copy.deepcopy(gnome.fitness)
+					self.bestGnome = copy.deepcopy(gnome)
+				if self.generationMaxFitness < gnome.fitness:
+					self.generationMaxFitness = copy.deepcopy(gnome.fitness)
+				gnome.fitness /= len(specie.gnomes)
 
 	def optimize(self, X, Y, iterations, requiredFitness):
 		self.X, self.Y = X, Y
@@ -537,8 +542,8 @@ mutationRate['weightsRange'] = 8		 # if value is x, then weights will be in [-x,
 mutationRate['perturbWeight'] = 0.8
 mutationRate['perturbBias'] = 0.25
 mutationRate['perturbWeightBias'] = 0.9
-mutationRate['addNode'] = 0.01
-mutationRate['addConnection'] = 0.03
+mutationRate['addNode'] = 0.03
+mutationRate['addConnection'] = 0.1
 mutationRate['reproduce'] = 0.75
 mutationRate['step'] = 0.1
 mutationRate['enableConnection'] = 0.4
@@ -547,9 +552,9 @@ mutationRate['disableConnection'] = 0.2
 delta['excess'] = 1
 delta['disjoint'] = 2
 delta['weights'] = 0.4
-delta['threshold'] = 4
+delta['threshold'] = 3
 delta['staleness'] = 15
-populationSize = 300
+populationSize = 150
 inputs, outputs = 2, 1
 iterations = 500
 requiredFitness = 38	# This is out of 40
