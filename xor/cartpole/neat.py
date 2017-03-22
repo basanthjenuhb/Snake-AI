@@ -1,5 +1,6 @@
 import numpy as np, math, copy, random, sys
 from graphviz import Digraph
+from cartpole import cartpole
 
 class nodeGene:
 	'''
@@ -62,6 +63,7 @@ class gnome:
 		self.totalNodes = inputs + outputs
 		self.nodeGenes = self.inputs + self.outputs + self.hidden
 		self.innovation = 0
+		self.task = cartpole(self)
 		self.fitness = 0
 		self.rank = 0
 		self.connectGenes = []
@@ -108,22 +110,26 @@ class gnome:
 		# print node.id,node.value,node.type
 		return node.value
 
-	def evaluateFitness(self, X, Y, display = False):
-		if len(X[0]) != len(self.inputs):
-			print("Input error")
+	def evaluateFitness(self,X , display = False):
+		if len(X) != len(self.inputs):
+			print("Input error",len(X),len(self.inputs))
+			sys.exit()
 			return
 		error, self.fitness, self.outputValues = [], 0, []
 		# print("\nNodes:",self.connectGenes,"\n")
+		for node in self.nodeGenes:
+			node.value, node.calculated = 0, False
 		for i in range(len(X)):
-			for node in self.nodeGenes:
-				node.value, node.calculated = 0, False
-			for j in range(len(X[i])):
-				self.inputs[j].value = X[i][j]
-			for node in self.outputs:
-				node.value = self.calculateBackward(node)
-			self.outputValues.append([ node.value for node in self.outputs ])
-		self.fitness = sum(abs(np.logical_not(Y).astype(int) - np.array(self.outputValues))) * 10
+			self.inputs[i].value = X[i]
+		for node in self.outputs:
+			node.value = self.calculateBackward(node)
+		self.outputValues = [ node.value for node in self.outputs ]
+		return self.outputValues
+		# self.fitness = sum(abs(np.logical_not(Y).astype(int) - np.array(self.outputValues))) * 10
 		if display:print(self.outputValues,"\n",self.connectGenes)
+
+	def performTask(self, display):
+		self.task.play(display)
 
 	def pickOne(self, gene1, gene2):
 		if random.random() < 0.5:
@@ -544,12 +550,13 @@ class population:
 			print("Generation:",self.generation,"Generation Max Fitness:", int(self.generationMaxFitness)," Max Fitness:",int(self.maxFitness))
 		# self.bestGnome.evaluateFitness(self.X, self.Y, True)
 
-	def evaluateFitness(self):
+	def evaluateFitness(self, display):
 		self.generationMaxFitness = 0
+		i = 0
 		self.stagnation += 1
 		for specie in self.species:
 			for gnome in specie.gnomes:
-				gnome.evaluateFitness(self.X, self.Y, False)
+				gnome.performTask(display)
 				if self.maxFitness < gnome.fitness:
 					self.maxFitness = copy.deepcopy(gnome.fitness)
 					self.bestGnome = copy.deepcopy(gnome)
@@ -557,6 +564,8 @@ class population:
 				if self.generationMaxFitness < gnome.fitness:
 					self.generationMaxFitness = copy.deepcopy(gnome.fitness)
 					self.generationBestGnome = copy.deepcopy(gnome)
+				if display:print("Member:",i,"Score:",gnome.fitness)
+				i += 1
 				gnome.fitness /= len(specie.gnomes)
 		if self.stagnation >= 20:
 			self.species = sorted(self.species, key = lambda x: x.averageFitness, reverse = True)
@@ -570,23 +579,22 @@ class population:
 				self.addToSpecies(gnome)
 			self.stagnation = 0
 
-	def optimize(self, X, Y, iterations, requiredFitness, display):
-		self.X, self.Y = X, Y
+	def optimize(self,iterations, requiredFitness, display):
 		for i in range(iterations):
-			self.evaluateFitness()
+			self.evaluateFitness(False)
 			self.newGeneration(display)
 			if self.maxFitness > requiredFitness:break
-			# self.bestGnome.evaluateFitness(self.X, self.Y, True)
-		self.bestGnome.evaluateFitness(self.X, self.Y, True)
+		print("Successfully completed task")
+		self.bestGnome.performTask(True)
 		self.bestGnome.draw()
 
 mutationRate, delta = {}, {}
-mutationRate['weightsRange'] = 16		 # if value is x, then weights will be in [-x,x]
+mutationRate['weightsRange'] = 30		 # if value is x, then weights will be in [-x,x]
 mutationRate['perturbWeight'] = 0.8
 mutationRate['perturbBias'] = 0.25
 mutationRate['perturbWeightBias'] = 0.9
-mutationRate['addNode'] = 0.03
-mutationRate['addConnection'] = 0.05
+mutationRate['addNode'] = 0.1
+mutationRate['addConnection'] = 0.1
 mutationRate['reproduce'] = 0.75
 mutationRate['step'] = 0.1
 mutationRate['enableConnection'] = -0.01
@@ -597,12 +605,10 @@ delta['disjoint'] = 2
 delta['weights'] = 0.4
 delta['threshold'] = 3
 delta['staleness'] = 15
-populationSize = 150
-inputs, outputs = 3, 1
+populationSize = 20
+inputs, outputs = 5, 1
 iterations = 500
-requiredFitness = 38	# This is out of 40
+requiredFitness = 10000	# This is out of 40
 
-X = [[1,0,0],[1,0,1],[1,1,0],[1,1,1]]
-Y = np.array([[0],[1],[1],[0]])
 p = population(populationSize, inputs, outputs, mutationRate, delta)
-p.optimize(X, Y, iterations, requiredFitness, True)
+p.optimize(iterations, requiredFitness, True)

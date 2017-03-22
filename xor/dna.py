@@ -48,7 +48,7 @@ class neuralNetwork:
 
 	@staticmethod
 	def sigmoid(z):
-		return 1.0 / ( 1.0 + math.exp(-z) )
+		return 1.0 / ( 1.0 + math.exp(-10 * z) )
 
 	def calculate_backward(self, node):
 		if node.calculated or node.type == "input":
@@ -163,7 +163,7 @@ X = [ [1,0,0], [1,0,1], [1,1,0], [1,1,1] ]
 Y = np.array([[0,1,1,0]]).T
 size, p1, p2 = 500, 0.3, 0.5
 iterations = 200
-weights_range = 40
+weights_range = 2
 structure = (3,3,1)
 min_score = 39
 number_pops = 1

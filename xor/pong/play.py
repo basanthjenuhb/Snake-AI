@@ -1,5 +1,6 @@
-import numpy as np, math, copy, random, sys
-from graphviz import Digraph
+from ple.games.pong import Pong
+import numpy as np, sys, time, copy, pickle
+from ple import PLE
 
 class nodeGene:
 	'''
@@ -42,6 +43,7 @@ class connectGene:
 	def __repr__(self):
 		return "\nSource:" + str(self.source) + " destination:"+ str(self.destination) + " enabled:"+ str(self.enabled) + " innovation:"+ str(self.innovation) + " " + self.comment
 
+
 class gnome:
 	'''
 	Class to represent a gnome.
@@ -62,6 +64,7 @@ class gnome:
 		self.totalNodes = inputs + outputs
 		self.nodeGenes = self.inputs + self.outputs + self.hidden
 		self.innovation = 0
+		self.task = flappyBird(self)
 		self.fitness = 0
 		self.rank = 0
 		self.connectGenes = []
@@ -88,6 +91,8 @@ class gnome:
 		dot.render('outputs/9',view = True)
 
 	def sigmoid(self, x):
+		if x < 0:return 0
+		return x
 		return 1 / ( 1 + math.exp(-4.9 * x) )
 
 	def findNode(self, id_):
@@ -108,22 +113,26 @@ class gnome:
 		# print node.id,node.value,node.type
 		return node.value
 
-	def evaluateFitness(self, X, Y, display = False):
-		if len(X[0]) != len(self.inputs):
-			print("Input error")
+	def evaluateFitness(self,X , display = False):
+		if len(X) != len(self.inputs):
+			print("Input error",len(X),len(self.inputs))
+			sys.exit()
 			return
 		error, self.fitness, self.outputValues = [], 0, []
 		# print("\nNodes:",self.connectGenes,"\n")
+		for node in self.nodeGenes:
+			node.value, node.calculated = 0, False
 		for i in range(len(X)):
-			for node in self.nodeGenes:
-				node.value, node.calculated = 0, False
-			for j in range(len(X[i])):
-				self.inputs[j].value = X[i][j]
-			for node in self.outputs:
-				node.value = self.calculateBackward(node)
-			self.outputValues.append([ node.value for node in self.outputs ])
-		self.fitness = sum(abs(np.logical_not(Y).astype(int) - np.array(self.outputValues))) * 10
+			self.inputs[i].value = X[i]
+		for node in self.outputs:
+			node.value = self.calculateBackward(node)
+		self.outputValues = [ node.value for node in self.outputs ]
+		return self.outputValues
+		# self.fitness = sum(abs(np.logical_not(Y).astype(int) - np.array(self.outputValues))) * 10
 		if display:print(self.outputValues,"\n",self.connectGenes)
+
+	def performTask(self, display):
+		self.task.play(display)
 
 	def pickOne(self, gene1, gene2):
 		if random.random() < 0.5:
@@ -354,255 +363,52 @@ class gnome:
 	def __repr__(self):
 		return "\nNodes:" + str(self.totalNodes) + "\n" + str(self.nodeGenes) + "\nConnectGenes:" + str(len(self.connectGenes)) + "\n" + str(self.connectGenes) + "\n"
 
-class species:
-	'''
-	Class to hold a species. Multiple species hold up the entire population.inputs
-	Contains:
-		gnomes: All gnomes of a species
-		average Fitness and Maxfitness of a species
-	'''
-	def __init__(self):
-		self.gnomes = []
-		self.averageFitness = 0
-		self.maxFitness = 0
-		self.staleness = 0
+class pong:
+	max_crossed = 0
+	score = 0
+	game = Pong(width = 200, height = 200, MAX_SCORE = 10)
+	p =  PLE(game,display_screen = True)
+	p.init()
+	def __init__(self, gnome):
+		self.gnome = gnome
+		# game = FlappyBird()
 
-class population:
-	'''
-	Class to initialize a population
-	Contains:
-		size: Indicate size of the population.(Total no. of genomes in a population.)
-		numInputs, numOutputs: To indicate no. of inputs and outputs of a genome(ANN).
-		generation: To keep track of generation of population
-		species: To divide the population into species. Based on a distance function.
-		innovation: Global innovation number. To keep track of historical origin of gene.
-		mutationrate: Contain mutation rates for
-			Link mutate
-			Node mutate
-			Perturb Mutate
-			Breeding Mutate
-		members: To contain all members of the population
-	'''
-	innovation = 0
-	structuralChanges = []
-	numInputs, numOutputs = 0, 0
-	def __init__(self, size, inputs, outputs, mutationRate, delta):
-		self.size = size
-		population.numInputs, population.numOutputs = inputs, outputs
-		self.generation = 0
-		self.members = []
-		self.species = []
-		self.mutationRate = copy.deepcopy(mutationRate)
-		self.delta = delta
-		self.stagnation = 0
-		self.maxFitness = 0
-		self.__initializeStructuralChanges()
-		self.__initializePopulation()
+	def play(self, display):
+		pong.p.reset_game()
+		actionSet = pong.p.getActionSet()
+		score = 0
+		i, crossed = 0,0
+		while 1:
+			i += 1
+			observation = pong.game.getGameState()
+			state = [ observation['player_y'] , observation['player_velocity'], observation['cpu_y'] , observation['ball_x'] , observation['ball_y'] ,  observation['ball_velocity_x'] , observation['ball_velocity_y'] ]
 
-	def __initializeStructuralChanges(self):
-		population.innovation = inputs * outputs - 1
-		population.structuralChanges = []
-		for i in range(population.numInputs):
-			for j in range(population.numInputs, population.numInputs + population.numOutputs):
-				population.structuralChanges.append((i,j))
+			state.insert(0,1)
+			# print(len(actionSet),actionSet)
+			# sys.exit()
+			action = np.array(self.gnome.evaluateFitness(state, display)).argmax()
+			# print(action)
+			# action = actionSet[np.random.randint(0, len(actionSet))]
+			# print(action)
+			if self.game.game_over():break
+			mainScore = pong.p.act(actionSet[action])
+			# print()
+			if mainScore == -1 or score > 100000:break
+			if mainScore > 0:
+				crossed += 1
+				# sys.exit()
+			score += mainScore * 10
+			print("Score:",crossed,end = "")
+			print("\r",end = "")
+			score += 0.001
+			time.sleep(0.02)
+		if pong.score < score:
+			pong.score = score
+		print("1 .Iterations","Crossed:",crossed)
+		self.gnome.fitness = float(max(score,1))
 
-	def __initializePopulation(self):
-		'''
-		To initialize the population. Add all individuals to self.members and different species to self.species
-		'''
-		for _ in range(self.size):
-			member = gnome(self.mutationRate, self.numInputs, self.numOutputs, True)
-			member.mutate()
-			self.members.append(member)		# Adding the member to the Total population
-			self.addToSpecies(member)
-			# print(member)
-		# for specie in self.species:print(len(specie.gnomes))
-		# print()
-
-	@staticmethod
-	def updateInnovation(change):
-		'''
-		If a structural change is already encountered before, Its innovation number is returned.
-		Else, The innovation number is incremented and the value is returned.
-		'''
-		# print(change,population.structuralChanges)
-		if change in population.structuralChanges:
-			return population.structuralChanges.index(change)
-		population.structuralChanges.append(change)
-		population.innovation += 1
-		return population.innovation
-
-	def addToSpecies(self, member):
-		for specie in self.species:
-			if specie.gnomes[0].distance(member, self.delta):
-				specie.gnomes.append(member)
-				return
-		newSpecie = species()
-		newSpecie.gnomes.append(member)
-		self.species.append(newSpecie)
-
-	def cullSpecies(self, keepOne):
-		'''
-		Reduce the specie intop half based on fitness
-		Sort the gnomes in species according to their fitness in reverse.
-		Discard the lower half
-		'''
-		for specie in self.species:
-			specie.gnomes = sorted(specie.gnomes, key = lambda x: x.fitness, reverse = True)
-			if keepOne:
-				specie.gnomes = specie.gnomes[:3] + specie.gnomes[:3]
-				for gnome in specie.gnomes[int(len(specie.gnomes)/2):]:gnome.mutate()
-			else:
-				specie.gnomes = specie.gnomes[:math.ceil(len(specie.gnomes)/2)]
-			if len(specie.gnomes) == 0:
-				self.species.remove(specie)
-
-	def rankAll(self):
-		'''
-		Give a rank to the members globally
-		'''
-		self.members = []
-		for specie in self.species:
-			self.members += specie.gnomes
-		self.members = sorted(self.members, key = lambda x:x.fitness)
-		for i in range(len(self.members)):
-			self.members[i].rank = i + 1
-
-	def removeStaleSpecies(self):
-		for specie in self.species:
-			fitness = max([ gnome.fitness for gnome in specie.gnomes ])
-			if fitness > specie.maxFitness:
-				specie.maxFitness = fitness
-				specie.staleness = 0
-			else:
-				specie.staleness += 1
-			if specie.staleness > self.delta['staleness']:
-				bestGnome = max(specie.gnomes, key = lambda x: x.fitness)
-				bestSpecie = max(self.species, key = lambda x: x.averageFitness)
-				bestSpecie.gnomes.append(bestGnome)
-				bestSpecie.staleness = 0
-				self.species.remove(specie)
-				if not len(self.species):
-					self.__initializeStructuralChanges()
-					self.__initializePopulation()
-
-	def calculateAverageFitness(self):
-		for specie in self.species:
-			total = sum([ gnome.rank for gnome in specie.gnomes ])
-			specie.averageFitness = float(total)/ float(len(specie.gnomes))
-		self.totalAverageFitness = sum([ specie.averageFitness for specie in self.species ])
-
-	def removeWeakSpecies(self):
-		self.species = [ specie for specie in self.species if (specie.averageFitness / self.totalAverageFitness * self.size) >= 1 ]
-
-	def reproduce(self, specie):
-		if random.random() < self.mutationRate['reproduce']:
-			if random.random() < 0.001:
-				fatherSpecie = self.species[random.randrange(len(self.species))]
-				motherSpecie = self.species[random.randrange(len(self.species))]
-				father = fatherSpecie.gnomes[random.randrange(len(fatherSpecie.gnomes))]
-				mother = motherSpecie.gnomes[random.randrange(len(motherSpecie.gnomes))]
-			else:
-				father = specie.gnomes[random.randrange(len(specie.gnomes))]
-				mother = specie.gnomes[random.randrange(len(specie.gnomes))]
-			child = gnome(self.mutationRate, self.numInputs, self.numOutputs, False)
-			father.crossOver(mother, child)
-		else:
-			child = copy.deepcopy(specie.gnomes[random.randrange(len(specie.gnomes))])
-		child.mutate()
-		return child
-
-	def newGeneration(self, display):
-		'''
-		We perform the following steps:
-		1. Remove the bottom half of each species
-		2. Remove species that has not improved in 15 generations
-		3. Remove weak species
-		'''
-		self.cullSpecies(False)
-		self.removeStaleSpecies()
-		self.rankAll()
-		self.calculateAverageFitness()
-		# self.removeWeakSpecies()
-		newMembers = [ self.generationBestGnome ]
-		for specie in self.species:
-			num = math.floor((specie.averageFitness / self.totalAverageFitness * self.size)) - 1
-			for _ in range(num):
-				member = self.reproduce(specie)
-				newMembers.append(member)
-		self.cullSpecies(True)
-		while len(newMembers) + len(self.species) < self.size:
-			member = self.reproduce(self.species[random.randrange(len(self.species))])
-			newMembers.append(member)
-		for child in newMembers:
-			self.addToSpecies(child)
-		self.generation += 1
-		if display:
-			print("\nMembers in each species:",end = " | ")
-			for specie in self.species:print(len(specie.gnomes),end = " ")
-			print()
-			print("Generation:",self.generation,"Generation Max Fitness:", int(self.generationMaxFitness)," Max Fitness:",int(self.maxFitness))
-		# self.bestGnome.evaluateFitness(self.X, self.Y, True)
-
-	def evaluateFitness(self):
-		self.generationMaxFitness = 0
-		self.stagnation += 1
-		for specie in self.species:
-			for gnome in specie.gnomes:
-				gnome.evaluateFitness(self.X, self.Y, False)
-				if self.maxFitness < gnome.fitness:
-					self.maxFitness = copy.deepcopy(gnome.fitness)
-					self.bestGnome = copy.deepcopy(gnome)
-					self.stagnation = 0
-				if self.generationMaxFitness < gnome.fitness:
-					self.generationMaxFitness = copy.deepcopy(gnome.fitness)
-					self.generationBestGnome = copy.deepcopy(gnome)
-				gnome.fitness /= len(specie.gnomes)
-		if self.stagnation >= 20:
-			self.species = sorted(self.species, key = lambda x: x.averageFitness, reverse = True)
-			bestGnomes = [ specie.gnomes[0] for specie in self.species ]
-			bestGnomesCopy = bestGnomes[:]
-			for gnomes in bestGnomes:gnomes.mutate()
-			bestGnomes += bestGnomesCopy
-			self.species = self.species[:2]
-			for specie in self.species:specie.staleness = 0
-			for gnome in bestGnomes:
-				self.addToSpecies(gnome)
-			self.stagnation = 0
-
-	def optimize(self, X, Y, iterations, requiredFitness, display):
-		self.X, self.Y = X, Y
-		for i in range(iterations):
-			self.evaluateFitness()
-			self.newGeneration(display)
-			if self.maxFitness > requiredFitness:break
-			# self.bestGnome.evaluateFitness(self.X, self.Y, True)
-		self.bestGnome.evaluateFitness(self.X, self.Y, True)
-		self.bestGnome.draw()
-
-mutationRate, delta = {}, {}
-mutationRate['weightsRange'] = 16		 # if value is x, then weights will be in [-x,x]
-mutationRate['perturbWeight'] = 0.8
-mutationRate['perturbBias'] = 0.25
-mutationRate['perturbWeightBias'] = 0.9
-mutationRate['addNode'] = 0.03
-mutationRate['addConnection'] = 0.05
-mutationRate['reproduce'] = 0.75
-mutationRate['step'] = 0.1
-mutationRate['enableConnection'] = -0.01
-mutationRate['disableConnection'] = -0.01
-
-delta['excess'] = 1
-delta['disjoint'] = 2
-delta['weights'] = 0.4
-delta['threshold'] = 3
-delta['staleness'] = 15
-populationSize = 150
-inputs, outputs = 3, 1
-iterations = 500
-requiredFitness = 38	# This is out of 40
-
-X = [[1,0,0],[1,0,1],[1,1,0],[1,1,1]]
-Y = np.array([[0],[1],[1],[0]])
-p = population(populationSize, inputs, outputs, mutationRate, delta)
-p.optimize(X, Y, iterations, requiredFitness, True)
+if __name__ == "__main__":
+	with open('data1/data5000.dat','rb') as fp:
+		player = pickle.load(fp)
+	player.task = pong(player)
+	player.performTask(True)

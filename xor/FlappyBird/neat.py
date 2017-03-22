@@ -1,5 +1,6 @@
 import numpy as np, math, copy, random, sys
 from graphviz import Digraph
+from flappybird import flappyBird
 
 class nodeGene:
 	'''
@@ -62,6 +63,7 @@ class gnome:
 		self.totalNodes = inputs + outputs
 		self.nodeGenes = self.inputs + self.outputs + self.hidden
 		self.innovation = 0
+		self.task = flappyBird(self)
 		self.fitness = 0
 		self.rank = 0
 		self.connectGenes = []
@@ -88,6 +90,8 @@ class gnome:
 		dot.render('outputs/9',view = True)
 
 	def sigmoid(self, x):
+		if x < 0:return 0
+		return x
 		return 1 / ( 1 + math.exp(-4.9 * x) )
 
 	def findNode(self, id_):
@@ -108,22 +112,26 @@ class gnome:
 		# print node.id,node.value,node.type
 		return node.value
 
-	def evaluateFitness(self, X, Y, display = False):
-		if len(X[0]) != len(self.inputs):
-			print("Input error")
+	def evaluateFitness(self,X , display = False):
+		if len(X) != len(self.inputs):
+			print("Input error",len(X),len(self.inputs))
+			sys.exit()
 			return
 		error, self.fitness, self.outputValues = [], 0, []
 		# print("\nNodes:",self.connectGenes,"\n")
+		for node in self.nodeGenes:
+			node.value, node.calculated = 0, False
 		for i in range(len(X)):
-			for node in self.nodeGenes:
-				node.value, node.calculated = 0, False
-			for j in range(len(X[i])):
-				self.inputs[j].value = X[i][j]
-			for node in self.outputs:
-				node.value = self.calculateBackward(node)
-			self.outputValues.append([ node.value for node in self.outputs ])
-		self.fitness = sum(abs(np.logical_not(Y).astype(int) - np.array(self.outputValues))) * 10
+			self.inputs[i].value = X[i]
+		for node in self.outputs:
+			node.value = self.calculateBackward(node)
+		self.outputValues = [ node.value for node in self.outputs ]
+		return self.outputValues
+		# self.fitness = sum(abs(np.logical_not(Y).astype(int) - np.array(self.outputValues))) * 10
 		if display:print(self.outputValues,"\n",self.connectGenes)
+
+	def performTask(self, display):
+		self.task.play(display)
 
 	def pickOne(self, gene1, gene2):
 		if random.random() < 0.5:
@@ -495,7 +503,8 @@ class population:
 	def removeWeakSpecies(self):
 		self.species = [ specie for specie in self.species if (specie.averageFitness / self.totalAverageFitness * self.size) >= 1 ]
 
-	def reproduce(self, specie):
+	def reproduce(self, pool):
+		if not len(pool):return None
 		if random.random() < self.mutationRate['reproduce']:
 			if random.random() < 0.001:
 				fatherSpecie = self.species[random.randrange(len(self.species))]
@@ -503,12 +512,12 @@ class population:
 				father = fatherSpecie.gnomes[random.randrange(len(fatherSpecie.gnomes))]
 				mother = motherSpecie.gnomes[random.randrange(len(motherSpecie.gnomes))]
 			else:
-				father = specie.gnomes[random.randrange(len(specie.gnomes))]
-				mother = specie.gnomes[random.randrange(len(specie.gnomes))]
+				father = pool[random.randrange(-1,len(pool))]
+				mother = pool[random.randrange(-1,len(pool))]
 			child = gnome(self.mutationRate, self.numInputs, self.numOutputs, False)
 			father.crossOver(mother, child)
 		else:
-			child = copy.deepcopy(specie.gnomes[random.randrange(len(specie.gnomes))])
+			child = copy.deepcopy(pool[random.randrange(-1,len(pool))])
 		child.mutate()
 		return child
 
@@ -527,12 +536,16 @@ class population:
 		newMembers = [ self.generationBestGnome ]
 		for specie in self.species:
 			num = math.floor((specie.averageFitness / self.totalAverageFitness * self.size)) - 1
+			matingPool = []
+			for gnome in specie.gnomes:
+				matingPool += [ gnome ] * int(gnome.fitness)
 			for _ in range(num):
-				member = self.reproduce(specie)
-				newMembers.append(member)
+				member = self.reproduce(matingPool)
+				if member is not None:
+					newMembers.append(member)
 		self.cullSpecies(True)
 		while len(newMembers) + len(self.species) < self.size:
-			member = self.reproduce(self.species[random.randrange(len(self.species))])
+			member = self.reproduce(self.species[random.randrange(len(self.species))].gnomes)
 			newMembers.append(member)
 		for child in newMembers:
 			self.addToSpecies(child)
@@ -544,12 +557,15 @@ class population:
 			print("Generation:",self.generation,"Generation Max Fitness:", int(self.generationMaxFitness)," Max Fitness:",int(self.maxFitness))
 		# self.bestGnome.evaluateFitness(self.X, self.Y, True)
 
-	def evaluateFitness(self):
+	def evaluateFitness(self, display):
 		self.generationMaxFitness = 0
+		i = 0
 		self.stagnation += 1
 		for specie in self.species:
 			for gnome in specie.gnomes:
-				gnome.evaluateFitness(self.X, self.Y, False)
+				gnome.task = flappyBird(gnome)
+				gnome.performTask(display)
+				gnome.task = None
 				if self.maxFitness < gnome.fitness:
 					self.maxFitness = copy.deepcopy(gnome.fitness)
 					self.bestGnome = copy.deepcopy(gnome)
@@ -557,7 +573,9 @@ class population:
 				if self.generationMaxFitness < gnome.fitness:
 					self.generationMaxFitness = copy.deepcopy(gnome.fitness)
 					self.generationBestGnome = copy.deepcopy(gnome)
-				gnome.fitness /= len(specie.gnomes)
+				if display:print("Member:",i,"Score:",gnome.fitness)
+				i += 1
+				# gnome.fitness /= len(specie.gnomes)
 		if self.stagnation >= 20:
 			self.species = sorted(self.species, key = lambda x: x.averageFitness, reverse = True)
 			bestGnomes = [ specie.gnomes[0] for specie in self.species ]
@@ -570,14 +588,13 @@ class population:
 				self.addToSpecies(gnome)
 			self.stagnation = 0
 
-	def optimize(self, X, Y, iterations, requiredFitness, display):
-		self.X, self.Y = X, Y
+	def optimize(self,iterations, requiredFitness, display):
 		for i in range(iterations):
-			self.evaluateFitness()
+			self.evaluateFitness(True)
 			self.newGeneration(display)
 			if self.maxFitness > requiredFitness:break
-			# self.bestGnome.evaluateFitness(self.X, self.Y, True)
-		self.bestGnome.evaluateFitness(self.X, self.Y, True)
+		print("Successfully completed task")
+		self.bestGnome.performTask(True)
 		self.bestGnome.draw()
 
 mutationRate, delta = {}, {}
@@ -594,15 +611,13 @@ mutationRate['disableConnection'] = -0.01
 
 delta['excess'] = 1
 delta['disjoint'] = 2
-delta['weights'] = 0.4
-delta['threshold'] = 3
+delta['weights'] = 0.1
+delta['threshold'] = 4
 delta['staleness'] = 15
-populationSize = 150
-inputs, outputs = 3, 1
-iterations = 500
-requiredFitness = 38	# This is out of 40
+populationSize = 50
+inputs, outputs = 9, 2
+iterations = 5000
+requiredFitness = 100000	# This is out of 40
 
-X = [[1,0,0],[1,0,1],[1,1,0],[1,1,1]]
-Y = np.array([[0],[1],[1],[0]])
 p = population(populationSize, inputs, outputs, mutationRate, delta)
-p.optimize(X, Y, iterations, requiredFitness, True)
+p.optimize(iterations, requiredFitness, True)

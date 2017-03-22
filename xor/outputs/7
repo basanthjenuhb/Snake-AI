@@ -1,0 +1,16 @@
+digraph {
+	graph [rankdir=LR]
+		0 [label=Bias]
+		1 [label=Input]
+		2 [label=Input]
+		3 [label=Output]
+		4 [shape=circle]
+		5 [shape=circle]
+			2 -> 3 [label=-34.79]
+			1 -> 4 [label=20.56]
+			4 -> 3 [label=50.19]
+			2 -> 4 [label=17.52]
+			0 -> 4 [label=-11.54]
+			1 -> 5 [label=11.83]
+			5 -> 3 [label=-19.36]
+}
