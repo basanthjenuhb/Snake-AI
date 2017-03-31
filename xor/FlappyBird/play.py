@@ -373,7 +373,7 @@ class flappyBird:
 		# game = FlappyBird()
 
 	def play(self, display):
-		for _ in range(1):
+		for _ in range(10):
 			flappyBird.p.reset_game()
 			actionSet = flappyBird.p.getActionSet()
 			score = 0
@@ -414,7 +414,7 @@ class flappyBird:
 			self.gnome.fitness = float(max(score,1))
 
 if __name__ == "__main__":
-	with open('data2/data169.dat','rb') as fp:
+	with open('data206.dat','rb') as fp:
 		player = pickle.load(fp)
 	# gnome = pickle.load(open("gnome.pkl","rb"))
 	player.task = flappyBird(player)
